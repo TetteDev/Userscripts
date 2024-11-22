@@ -32,3 +32,61 @@ const DoOnce = (action) => {
     DoOnceMap.set(fnHash, true);
     return returnValue;
 };
+
+/*
+Usage: Expects a valid CSS selector, and "waits" indefinitely until atleast one element
+gets returned from the 'document.querySelectorAll(...)' using the provided selector
+*/
+const WaitForElement = (selector) => {
+    return new Promise((resolve, reject) => {
+        const el = document.querySelector(selector);
+            if (el) { return resolve(el);}
+            new MutationObserver((mutationRecords, observer) => {
+            // Query for elements matching the specified selector
+            Array.from(document.querySelectorAll(selector)).forEach((element) => {
+                //Once we have resolved we don't need the observer anymore.
+                observer.disconnect();
+                return resolve(element);
+            });
+        })
+        .observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+    });
+};
+
+/*
+Usage: Same functionality as 'WaitForElement' but with the promise gets rejected
+if no element is found within the interval provided by the 'timeout' argument
+*/
+const WaitForElementWithTimeout = (selector, timeout = 3000) => {
+	return new Promise((resolve, reject) => {
+		if (timeout < 0) timeout = 0;
+		if (!selector) reject("No selector specified");
+ 
+		const el = document.querySelector(selector);
+		if (el) return resolve(el);
+ 
+		const timeoutMessage = `Timeout: Element with selector '${selector}' not found within ${timeout} ms`;
+		let timer = setTimeout(() => {
+            clearTimeout(timer);
+			observer.disconnect();
+			reject(new Error(timeoutMessage));
+		}, timeout);
+ 
+		const observer = new MutationObserver((mutationRecords, observer) => {
+			let elements = Array.from(document.querySelectorAll(selector));
+			if (elements.length > 0) {
+				clearTimeout(timer);
+				observer.disconnect();
+				return resolve(elements[0]);
+			}
+		});
+ 
+		observer.observe(document.documentElement, {
+			childList: true,
+			subtree: true,
+		});
+	});
+};
