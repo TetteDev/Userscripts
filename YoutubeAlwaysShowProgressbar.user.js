@@ -10,7 +10,7 @@
 // global tick count
 let ticks = 0;
 // Auto update the always showing progress bar every n'th timeupdate/progress ticks
-const triggerTickCount = 5;
+const triggerTickCount = 8;
 
 // set this to false to disable automatically setting youtube video quality
 const autoSetQuality = true;
@@ -80,7 +80,11 @@ const fnInnerFindVideoInterval = () => {
 
     video.addEventListener("timeupdate",function() {
 		if (autoSetQuality && (ticks == 0 || (ticks % qualityTriggerTickCount === 0))) {
-			const player = document.querySelector(".html5-video-player") ?? progressbar.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
+			const player = document.querySelector(".html5-video-player") ?? (progressbar.closest(".html5-video-player") || progressbar.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement || null);
+			if (!player || player === undefined) {
+				debugger;
+				return;
+			}
 			const currentQuality = player.getPlaybackQuality();
 			const availableQualities = player.getAvailableQualityLevels().filter(qual => qual !== "auto");
 
