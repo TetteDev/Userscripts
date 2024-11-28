@@ -40,13 +40,13 @@ gets returned from the 'document.querySelectorAll(...)' using the provided selec
 const WaitForElement = (selector) => {
     return new Promise((resolve, reject) => {
         const el = document.querySelector(selector);
-            if (el) { return resolve(el);}
+            if (el) { resolve(el); }
             new MutationObserver((mutationRecords, observer) => {
             // Query for elements matching the specified selector
             Array.from(document.querySelectorAll(selector)).forEach((element) => {
                 //Once we have resolved we don't need the observer anymore.
                 observer.disconnect();
-                return resolve(element);
+                resolve(element);
             });
         })
         .observe(document.documentElement, {
@@ -66,7 +66,7 @@ const WaitForElementWithTimeout = (selector, timeout = 3000) => {
 		if (!selector) reject("No selector specified");
  
 		const el = document.querySelector(selector);
-		if (el) return resolve(el);
+		if (el) resolve(el);
  
 		const timeoutMessage = `Timeout: Element with selector '${selector}' not found within ${timeout} ms`;
 		let timer = setTimeout(() => {
@@ -80,7 +80,7 @@ const WaitForElementWithTimeout = (selector, timeout = 3000) => {
 			if (elements.length > 0) {
 				clearTimeout(timer);
 				observer.disconnect();
-				return resolve(elements[0]);
+				resolve(elements[0]);
 			}
 		});
  

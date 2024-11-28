@@ -1,21 +1,22 @@
 // ==UserScript==
 // @name         YouTube Always show progress bar (and auto quality)
-// @version      0.2
+// @version      0.3
 // @description  Youtube Shit
 // @author       TetteDev
 // @match        *://www.youtube.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
 
+const animateProgressbarUpdate = true;
 // global tick count
 let ticks = 0;
 // Auto update the always showing progress bar every n'th timeupdate/progress ticks
-const triggerTickCount = 8;
+const triggerTickCount = animateProgressbarUpdate ? 50 : 8; // update less frequently (also good for cpu) if we are animating the width of the progress bar
 
 // set this to false to disable automatically setting youtube video quality
 const autoSetQuality = true;
 // Auto set quality every n'th timeupdate update ticks
-let qualityTriggerTickCount = 15;
+let qualityTriggerTickCount = 25;
 
 // available qualities to chose from
 // _max will use the highest available quality for the video
@@ -73,7 +74,7 @@ const fnInnerFindVideoInterval = () => {
 	// Buffer portion of the video progressbar
     var loadbar = ytplayer.querySelector(".ytp-load-progress");
     if (!video || !progressbar || !loadbar) {
-		console.warn("[Always Show Progressbar] Could not find vital elements",video,progressbar,loadbar);
+		console.warn("[Always Show Progressbar] Could not find vital elements", video, progressbar, loadbar);
         return;
     }
 	ytplayer.className += " addedupdateevents";
@@ -87,56 +88,37 @@ const fnInnerFindVideoInterval = () => {
 			}
 			const currentQuality = player.getPlaybackQuality();
 			const availableQualities = player.getAvailableQualityLevels().filter(qual => qual !== "auto");
-
-			let success = false;
-			for (let i = 0; i < priorityTargetQuality.length; i++) {
-				const targetQuality = priorityTargetQuality[i];
-				if (currentQuality === targetQuality) {
-					success = true;
-					break;
+			const matchedQualitiesOrdered = availableQualities.filter(quality => priorityTargetQuality.includes(quality));
+			if (matchedQualitiesOrdered && matchedQualitiesOrdered.length > 0) {
+				if (currentQuality !== matchedQualitiesOrdered[0]) {
+					player.setPlaybackQualityRange(matchedQualitiesOrdered[0]);
 				}
-				else {
-					if (availableQualities.includes(targetQuality)) {
-						player.setPlaybackQualityRange(targetQuality);
-						console.log("Video Quality set to " + targetQuality);
-						success = true;
-						break;
-					}
-				}
+			} else {
+				if ("hd1080" in availableQualities && currentQuality !== "hd1080") player.setPlaybackQualityRange("hd1080");
+				else if ("highres" in availableQualities && currentQuality !== "highres") player.setPlaybackQualityRange("highres");
+				else if ("auto" in availableQualities && currentQuality !== "auto") player.setPlaybackQualityRange("auto");
+				else if ("hd720" in availableQualities && currentQuality !== "hd720") player.setPlaybackQualityRange("hd720");
 			}
-
-			if (!success) {
-				if (availableQualities.includes("highres")) player.setPlaybackQualityRange("highres");
-				else {
-					if (priorityTargetQuality[priorityTargetQuality.length - 1] === "_max") {
-						player.setPlaybackQualityRange(availableQualities[0]);
-						console.log("Video Quality set to " + availableQualities[0]);
-					}
-					else {
-						player.setPlaybackQualityRange("auto");
-						console.log("Video Quality set to auto");
-					}
-				}
-			}
-
-			/*
-			const _targetQuality = targetQuality ? (targetQuality === "_max" ? availableQualities[0] : (!availableQualities.includes(targetQuality) ? availableQualities[0] : targetQuality)) : availableQualities[0];
-			const isDesiredQuality = _targetQuality === currentQuality;
-			if (!isDesiredQuality) {
-				player.setPlaybackQualityRange(_targetQuality);
-				console.log(`Quality set to ${_targetQuality}`);
-			}
-			*/
 		}
 
+		if (animateProgressbarUpdate) {
+			const transition = "transform .5s linear";
+			if (progressbar.style.transition === "") {
+				progressbar.style.transition = transition;
+			}
+
+			if (loadbar.style.transition === "") {
+				loadbar.style.transition = transition;
+			}
+		}
 		if (++ticks % triggerTickCount === 0) {
-			progressbar.style.transform = "scaleX("+(video.currentTime/video.duration)+")";
+			progressbar.style.transform = `scaleX(${(video.currentTime/video.duration)})`;
 		}
     });
 
 	video.addEventListener("progress",function() {
-		loadbar.style.transform = "scaleX("+(video.buffered.end(video.buffered.length-1)/video.duration)+")";
-		progressbar.style.transform = "scaleX("+(video.currentTime/video.duration)+")";
+		loadbar.style.transform = `scaleX(${(video.buffered.end(video.buffered.length-1)/video.duration)})`;
+		progressbar.style.transform = `scaleX(${(video.currentTime/video.duration)})`;
 	});
 }
 
